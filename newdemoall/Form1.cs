@@ -584,7 +584,7 @@ namespace newdemoall
                                 Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
                             }
                         });
-                        bitmap.Save(nowPcb.FrontPcb.savePath + "F" + fuckDetectNum + ".jpg");
+                        bitmap.Save(nowPcb.FrontPcb.savePath + "/F" + fuckDetectNum + ".jpg");
                         //this.pictureBox1.Image = bitmap;
                         //if (needsave)
                         //{
@@ -702,42 +702,42 @@ namespace newdemoall
 
         private void picevent(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
-            try
-            {
-                while (true)
-                {
-                    if (bitmaps.Count > 0)
-                    {
-                        Bitmap savebitmap = bitmaps.Dequeue();
-                        savebitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);
-                        path = tbSavePath.Text + "F" + fuckSaveNum + ".jpg";
-                        savebitmap.Save(path, System.Drawing.Imaging.ImageFormat.Jpeg);
-                        fuckSaveNum++;
+            //try
+            //{
+            //    while (true)
+            //    {
+            //        if (bitmaps.Count > 0)
+            //        {
+            //            Bitmap savebitmap = bitmaps.Dequeue();
+            //            savebitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);
+            //            path = tbSavePath.Text + "F" + fuckSaveNum + ".jpg";
+            //            savebitmap.Save(path, System.Drawing.Imaging.ImageFormat.Jpeg);
+            //            fuckSaveNum++;
 
 
 
-                        //Bitmap fBitmap = new Bitmap(fuckpath + "/F" + i + ".jpg");
-                        //fBitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);  //指定不进行翻转的 180 度旋转  （垂直翻转+水平翻转）
-                        //nowPcb.FrontPcb.bitmaps.Enqueue(new OneStitchSidePcb.BitmapInfo() { bitmap = fBitmap, name = "/F" + i + ".jpg" });
+            //            //Bitmap fBitmap = new Bitmap(fuckpath + "/F" + i + ".jpg");
+            //            //fBitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);  //指定不进行翻转的 180 度旋转  （垂直翻转+水平翻转）
+            //            //nowPcb.FrontPcb.bitmaps.Enqueue(new OneStitchSidePcb.BitmapInfo() { bitmap = fBitmap, name = "/F" + i + ".jpg" });
 
 
-                        ////Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
-                        //MySmartThreadPool.Instance().QueueWorkItem(() =>
-                        //{
-                        //    lock (nowPcb.FrontPcb)
-                        //    {
-                        //        Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
-                        //    }
-                        //});
-                    }
-                    Thread.Sleep(50);
-                }
-            }
-            catch (Exception ex)
-            {
-                Loghelper.WriteLog("保存图片失败", ex);
+            //            ////Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
+            //            //MySmartThreadPool.Instance().QueueWorkItem(() =>
+            //            //{
+            //            //    lock (nowPcb.FrontPcb)
+            //            //    {
+            //            //        Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
+            //            //    }
+            //            //});
+            //        }
+            //        Thread.Sleep(50);
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    Loghelper.WriteLog("保存图片失败", ex);
 
-            }
+            //}
 
         }
 
