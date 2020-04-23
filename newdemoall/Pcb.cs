@@ -99,7 +99,7 @@ namespace newdemoall
             {
                 string id = new Snowflake(1).nextId().ToString();
                 string sPath = @"D:\Power-Ftp\" + id;
-                if (!Directory.Exists(sPath)) Directory.CreateDirectory(sPath);
+   
                 Pcb pcb = new Pcb()
                 {
                     Id = id,
@@ -108,7 +108,7 @@ namespace newdemoall
                 };
 
                 float confidence = (float)0.01;
-                float scale = (float)0.25;
+                float scale = (float)0.5;
                 OneStitchSidePcb front = new OneStitchSidePcb()
                 {
                     confidence = confidence,

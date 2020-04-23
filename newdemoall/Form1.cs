@@ -22,6 +22,9 @@ using newdemoall.Tools;
 using System.Drawing.Imaging;
 using newdemoall.Model;
 using Newtonsoft.Json;
+using static newdemoall.Aoi;
+using Emgu.CV.Structure;
+using Emgu.CV;
 
 namespace newdemoall
 {
@@ -49,6 +52,8 @@ namespace newdemoall
         Pcb nowPcb;
         private int allDetectNum = 0;
         private bool isBabyYiNing = false; //不跑小马的代码
+
+        private bool isFuckNewProject = false;
         /// <summary>
         /// 拼图回调函数，用于执行界面更新
         /// </summary>
@@ -94,40 +99,110 @@ namespace newdemoall
         /// <param name="savePath">图像保存地址</param>
         public void aiDetect(bool isFront, OneStitchSidePcb.BitmapInfo bitmapInfo, Rectangle scaleRect, double scale, float confidence, string savePath)
         {
-            //Console.WriteLine(allDetectNum);
-            MySmartThreadPool.InstanceSmall().QueueWorkItem((name, bmp) =>
+  
+            if (allDetectNum < 193)
+            {
+                aiDone(savePath);
+                bitmapInfo.bitmap.Dispose();
+                return;
+            }
+            MySmartThreadPool.InstanceSmall().QueueWorkItem((n, name, bmp) =>
             {
                 try
                 {
-                    bbox_t_container boxlist = new bbox_t_container();
-                    using (MemoryStream stream = new MemoryStream())
+                    feature_bbox_t_container feature_Bbox = new feature_bbox_t_container();
+                    //{ 1, 64, 3, 100, 255, 9, 100, 0.8, 0.2, 0.3 };
+                    /*
+                     	int feature=1;        // 特征类型编号
+                        unsigned n_boxes=64;     // 输出的bbox个数
+                        int ks=3;               // 卷积核尺寸，与图像尺寸成正比
+                        float f_lb=100;           // 特征下限
+                        float f_ub=255;           // 特征上限
+                        int a_lb=9;             // 面积下限
+                        int a_ub=100;             // 面积上限
+                        float rb_lb=0.8;
+                        float whr_eps=0.2;
+                        float ar_eps=0.3;*/
+
+                    FP1 fP1 = new FP1 { feature = 1, n_boxes = 64, ks = 3, f_lb = 100, f_ub = 255, a_lb = 1, a_ub = 100, rb_lb = (float)0.8, whr_eps = (float)0.2, ar_eps = (float)0.3 };
+
+                    Emgu.CV.Image<Bgr, Byte> currentFrame = new Emgu.CV.Image<Bgr, Byte>(bmp);
+                    Mat img = new Mat();
+                    CvInvoke.BitwiseAnd(currentFrame, currentFrame, img);
+                    string maskPath = Application.StartupPath + "/mask/" + name;
+                    if (File.Exists(maskPath))
                     {
-                        bmp.Save(stream, ImageFormat.Jpeg);
-                        byte[] byteImg = new byte[stream.Length];
-                        stream.Seek(0, SeekOrigin.Begin);
-                        stream.Read(byteImg, 0, Convert.ToInt32(stream.Length));
-                        int n = -1;
+                        Mat mask = new Mat(maskPath, Emgu.CV.CvEnum.LoadImageType.Grayscale);
                         lock (detectKey)
                         {
-                            n = AITestSDK.detect_opencv_mat(byteImg, byteImg.Length, ref boxlist, confidence);
-                        }
-                        if (n == -1) Console.WriteLine("AI调用失败");
-                        else
-                        {
-                            resultJoin(name, isFront, scale, scaleRect, boxlist, new List<string>() { "NG"}, new Point(0, 0));
+                            int res = Aoi.feature_filter(img.Ptr, ref feature_Bbox, fP1, mask.Ptr);
                         }
                     }
+                    
+                    //img.Dispose();
+                    currentFrame.Dispose();
+
+                    Snowflake snowflake = new Snowflake(2);
+                    try
+                    {
+                        if (feature_Bbox.bboxlist.Length > 0)
+                        {
+                            for (int i = 0; i < feature_Bbox.bboxlist.Length; i++)
+                            {
+                                if (feature_Bbox.bboxlist[i].Height == 0)
+                                {
+                                    break;
+                                }
+                                else
+                                {
+                                    string id = name.Replace(".jpg", "") + "(" + snowflake.nextId().ToString() + ")";
+                                    //bbox_t bbox = new bbox_t(); //;
+                                    Rectangle bbox = feature_Bbox.bboxlist[i];
+                                    //Rectangle rr = new Rectangle((int)bbox.X, (int)bbox.Y, (int)bbox.Width, (int)bbox.Height);
+                                    //rr.Inflate(20, 20);
+                                    //CvInvoke.Rectangle(img, rr, new MCvScalar(255, 255, 255), 5);
+                                    //img.Save("D:/fuck/" + name);
+                                    bbox.X = (int)(bbox.X * 0.5 * scale + scaleRect.X); // + (uint)scaleRect.X;
+                                    bbox.Y = (int)(bbox.Y * 0.5 * scale + scaleRect.Y); // + (uint)scaleRect.Y;
+                                    bbox.Width = (int)(bbox.Width * scale * 0.5);
+                                    bbox.Height = (int)(bbox.Height * scale * 0.5);
+                                    if (bbox.Width <= 1) bbox.Width = 1;
+                                    if (bbox.Height <= 1) bbox.Height = 1;
+                                    //bbox.Inflate(30, 30);
+                                    Result result = new Result()
+                                    {
+                                        Id = id,
+                                        IsBack = Convert.ToInt32(!isFront),
+                                        score = (float)0.99,
+                                        PcbId = nowPcb.Id,
+                                        Area = "",
+                                        Region = bbox.X + "," + bbox.Y + "," + bbox.Width + "," + bbox.Height,
+                                        NgType = "NG",
+                                        PartImagePath = id + ".jpg",
+                                        CreateTime = DateTime.Now,
+                                    };
+                                    lock (nowPcb.results)
+                                    {
+                                        nowPcb.results.Add(result);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception er) { }
                 }
-                catch (Exception er) {  }
+                catch (Exception er)
+                {
+                    Loghelper.WriteLog("污染单独算法", er);
+                }
                 finally
                 {
                     bmp.Dispose();
-                    allDetectNum++;
+                    //Console.WriteLine(n);
                     aiDone(savePath);
                 }
-                //最总检测的结果还是放在这里发送吧
-
-            }, bitmapInfo.name, (Bitmap)bitmapInfo.bitmap.Clone());
+            }, allDetectNum, bitmapInfo.name, (Bitmap)bitmapInfo.bitmap.Clone());
+           
         }
         /// <summary>
         /// Json格式化输出
@@ -164,7 +239,12 @@ namespace newdemoall
         /// <param name="oneStitchSidePcb"></param>
         public void aiDone(string savePath)
         {
-            Console.WriteLine(allDetectNum);
+            allDetectNum++;
+            this.BeginInvoke((Action)(() =>
+            {
+                this.Text = "当前检测数量:" + allDetectNum;
+            }));
+                Console.WriteLine(allDetectNum);
             if (allDetectNum == nowPcb.AllPhotoNum)
             {
                 this.BeginInvoke((Action)(() =>
@@ -193,6 +273,7 @@ namespace newdemoall
                             .TopicExchangePublishMessageToServerAndWaitConfirm("", "work", "work", res);
 
                             File.WriteAllText(Path.Combine(savePath, "result.json"), ConvertJsonString(res));
+                            MessageBox.Show("检测完成");
                         }
                         catch (Exception er)
                         {
@@ -213,44 +294,7 @@ namespace newdemoall
         }
 
 
-        public void resultJoin(string imgName, bool isFront, double scale, Rectangle scaleRect, bbox_t_container boxlist, List<string> names, Point startPoint)
-        {
-            Snowflake snowflake = new Snowflake(2);
-            if (boxlist.bboxlist.Length > 0)
-            {
-                for (int i = 0; i < boxlist.bboxlist.Length; i++)
-                {
-                    if (boxlist.bboxlist[i].h == 0) break;
-                    else
-                    {
-                        string id = imgName.Replace(".jpg", "") + "(" + snowflake.nextId().ToString() + ")";
-                        bbox_t bbox = boxlist.bboxlist[i];
-                        bbox.x = (uint)((bbox.x + startPoint.X) * scale) + (uint)scaleRect.X; // + (uint)scaleRect.X;
-                        bbox.y = (uint)((bbox.y + startPoint.Y) * scale) + (uint)scaleRect.Y; // + (uint)scaleRect.Y;
-                        bbox.w = (uint)(bbox.w * scale);
-                        bbox.h = (uint)(bbox.h * scale);
-                        Result result = new Result()
-                        {
-                            Id = id,
-                            IsBack = Convert.ToInt32(!isFront),
-                            score = bbox.prob,
-                            PcbId = nowPcb.Id,
-                            Area = "",
-                            Region = bbox.x + "," + bbox.y + "," + bbox.w + "," + bbox.h,
-                            NgType = names[(int)bbox.obj_id],
-                            PartImagePath = id + ".jpg",
-                            CreateTime = DateTime.Now,
-                        };
-                        lock (nowPcb.results)
-                        {
-                            nowPcb.results.Add(result);
-                        }
-                    }
-                }
-            }
-        }
-
-
+     
         public Form1()
         {
             InitializeComponent();
@@ -569,23 +613,47 @@ namespace newdemoall
                 {
                     try
                     {
-                 
-                        bitmap = bitmapInfo.m_Bitmap;
 
-                        bitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);  //指定不进行翻转的 180 度旋转  （垂直翻转+水平翻转）
-                        nowPcb.FrontPcb.bitmaps.Enqueue(new OneStitchSidePcb.BitmapInfo() { bitmap = BitmapScaleHelper.ScaleToSize(bitmap, (float)0.5), name = "/F" + fuckDetectNum + ".jpg" });
-                        fuckDetectNum++;
+                        bitmap = bitmapInfo.m_Bitmap;// ;
 
-                        //Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
-                        MySmartThreadPool.Instance().QueueWorkItem(() =>
+
+
+                        ////Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
+                        //MySmartThreadPool.Instance().QueueWorkItem(() =>
+                        //{
+                        //    lock (nowPcb.FrontPcb)
+                        //    {
+                        //        Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
+                        //    }
+                        //});
+
+                        if (!isFuckNewProject)
                         {
-                            lock (nowPcb.FrontPcb)
+                            bitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);  //指定不进行翻转的 180 度旋转  （垂直翻转+水平翻转）as
+                                                                                  //nowPcb.FrontPcb.bitmaps.Enqueue(new OneStitchSidePcb.BitmapInfo() { bitmap = (Bitmap)bitmap.Clone(), name = "/F" + fuckDetectNum + ".jpg" });
+                                                                                  ////nowPcb.FrontPcb.bitmaps.Enqueue(new OneStitchSidePcb.BitmapInfo() { bitmap = bitmap, name = "/F" + fuckDetectNum + ".jpg" });
+
+                            fuckDetectNum++;
+
+                            ////Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
+                            //MySmartThreadPool.Instance().QueueWorkItem(() =>
+                            //{
+                            //    lock (nowPcb.FrontPcb)
+                            //    {
+                            //        Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
+                            //    }
+                            //});
+                            if (!Directory.Exists(nowPcb.FrontPcb.savePath)) Directory.CreateDirectory(nowPcb.FrontPcb.savePath);
+                            bitmap.Save(nowPcb.FrontPcb.savePath + "/F" + fuckDetectNum + ".jpg");
+                      
+                            this.Text = "当前拍照数量" + fuckDetectNum;
+                            if (fuckDetectNum == 240)
                             {
-                                Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
+                                fuckDetectNum = 0;
+                                MessageBox.Show("拍摄完成");
                             }
-                        });
-                        bitmap.Save(nowPcb.FrontPcb.savePath + "/F" + fuckDetectNum + ".jpg");
-                        //this.pictureBox1.Image = bitmap;
+                        }
+                        this.pictureBox1.Image = bitmap;
                         //if (needsave)
                         //{
 
@@ -611,6 +679,7 @@ namespace newdemoall
         {
             try
             {
+                isFuckNewProject = true;
                 conncamera();
                 button6_Click_1();
                 needsave = false;
@@ -817,88 +886,153 @@ namespace newdemoall
             //     // 特别说明，这里的路径一定要用 '/' 不能用反斜杠
             //     "C://Users//Administrator//Desktop//suomi-test-img//aimodel//voc.weights",
             //     0);
-            return AITestSDK.init(@"E:\BaiduNetdiskDownload\newdemoall\newdemoall\newdemoall\bin\x64\Debug\suomi\data\config.data",
-                // 特别说明，这里的路径一定要用 '/' 不能用反斜杠
-                // 特别说明，这里的路径一定要用 '/' 不能用反斜杠
-                // 特别说明，这里的路径一定要用 '/' 不能用反斜杠
-                "E:/BaiduNetdiskDownload/newdemoall/newdemoall/newdemoall/bin/x64/Debug/suomi/data/voc.weights",
-                0);
+
+            return -1;
+            //return AITestSDK.init(@"E:\BaiduNetdiskDownload\newdemoall\newdemoall\newdemoall\bin\x64\Debug\suomi\data\config.data",
+            //    // 特别说明，这里的路径一定要用 '/' 不能用反斜杠
+            //    // 特别说明，这里的路径一定要用 '/' 不能用反斜杠
+            //    // 特别说明，这里的路径一定要用 '/' 不能用反斜杠
+            //    "E:/BaiduNetdiskDownload/newdemoall/newdemoall/newdemoall/bin/x64/Debug/suomi/data/voc.weights",
+            //    0);
 
         }
 
         private void btnFuckTest_Click(object sender, EventArgs e)
         {
-
+            fuckDetectNum = 0;
             //thiscard = true;
             //isBabyYiNing = true;
             nowPcb = Pcb.CreatePcb();
 
-            try
-            {
-                JsonData<Pcb> jsonData = new JsonData<Pcb>();
-                jsonData.data = nowPcb;
-                jsonData.executionTime = 11;
-                jsonData.ngNum = nowPcb.results.Count;
-                var jSetting = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-                string[] props = { "FrontPcb", "BackPcb" }; //排除掉，不能让前端看到的字段。为true的话就是只保留这些字段
-                jSetting.ContractResolver = new LimitPropsContractResolver(props, false);
-
-                string res = JsonConvert.SerializeObject(jsonData, jSetting);
-                RabbitMQClientHandler.GetInstance()
-                .TopicExchangePublishMessageToServerAndWaitConfirm("", "work", "work", res);
-
-                //File.WriteAllText(Path.Combine(savePath, "result.json"), ConvertJsonString(res));
-            }
-            catch (Exception er)
-            {
-                //LogHelper.WriteLog("连接队列失败!!!", er);
-            }
-            //string imgPath = "testpic.png";
-            //OpenFileDialog ofd = new OpenFileDialog();
-            //DialogResult fdr = ofd.ShowDialog();
-            //if (fdr == DialogResult.OK)
+            //try
             //{
-            //    imgPath = ofd.FileName;
+            //    JsonData<Pcb> jsonData = new JsonData<Pcb>();
+            //    jsonData.data = nowPcb;
+            //    jsonData.executionTime = 11;
+            //    jsonData.ngNum = nowPcb.results.Count;
+            //    var jSetting = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+            //    string[] props = { "FrontPcb", "BackPcb" }; //排除掉，不能让前端看到的字段。为true的话就是只保留这些字段
+            //    jSetting.ContractResolver = new LimitPropsContractResolver(props, false);
+
+            //    string res = JsonConvert.SerializeObject(jsonData, jSetting);
+            //    RabbitMQClientHandler.GetInstance()
+            //    .TopicExchangePublishMessageToServerAndWaitConfirm("", "work", "work", res);
+
+            //    //File.WriteAllText(Path.Combine(savePath, "result.json"), ConvertJsonString(res));
             //}
-            //DirectoryInfo info = new DirectoryInfo(imgPath);
-            //string fuckpath = info.Parent.FullName;
-
-            //nowPcb.FrontPcb.allCols = 24;
-            //nowPcb.FrontPcb.allRows = 10;
-            //nowPcb.FrontPcb.allNum = 240;
-            //nowPcb.FrontPcb.or_hl = 0.3;
-            //nowPcb.FrontPcb.or_hu = 0.4;
-            //nowPcb.FrontPcb.or_vl = 0.1;
-            //nowPcb.FrontPcb.or_vu = 0.5;
-            //nowPcb.FrontPcb.dr_hu = 0.02;
-            //nowPcb.FrontPcb.dr_vu = 0.02;
-            //MySmartThreadPool.Instance().QueueWorkItem(() =>
+            //catch (Exception er)
             //{
-            //    DirectoryInfo root = new DirectoryInfo(fuckpath);
-            //    //int i = 0;
-            //    for (int i = 1; i <= nowPcb.FrontPcb.allNum; i++)
-            //    {
-            //        Bitmap fBitmap = new Bitmap(fuckpath + "/F" + i + ".jpg");
-            //        fBitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);  //指定不进行翻转的 180 度旋转  （垂直翻转+水平翻转）
-            //        nowPcb.FrontPcb.bitmaps.Enqueue(new OneStitchSidePcb.BitmapInfo() { bitmap = (Bitmap)BitmapScaleHelper.ScaleToSize(fBitmap, (float)0.4).Clone(), name = "/F" + i + ".jpg" });
-            //        fBitmap.Dispose();
+            //    //LogHelper.WriteLog("连接队列失败!!!", er);
+            //}
+            string imgPath = "testpic.png";
+            OpenFileDialog ofd = new OpenFileDialog();
+            DialogResult fdr = ofd.ShowDialog();
+            if (fdr == DialogResult.OK)
+            {
+                imgPath = ofd.FileName;
+            }
+            DirectoryInfo info = new DirectoryInfo(imgPath);
+            string fuckpath = info.Parent.FullName;
+            nowPcb.Id = info.Parent.Name;
+            nowPcb.FrontPcb.savePath = @"D:\Power-Ftp\" + info.Parent.Name;
+            nowPcb.FrontPcb.allCols = 24;
+            nowPcb.FrontPcb.allRows = 10;
+            nowPcb.FrontPcb.allNum = 240;
+            nowPcb.FrontPcb.or_hl = 0.3;
+            nowPcb.FrontPcb.or_hu = 0.4;
+            nowPcb.FrontPcb.or_vl = 0.1;
+            nowPcb.FrontPcb.or_vu = 0.5;
+            nowPcb.FrontPcb.dr_hu = 0.02;
+            nowPcb.FrontPcb.dr_vu = 0.02;
+            MySmartThreadPool.Instance().QueueWorkItem(() =>
+            {
+                DirectoryInfo root = new DirectoryInfo(fuckpath);
+                //int i = 0;
+                for (int i = 1; i <= nowPcb.FrontPcb.allNum; i++)
+                {
+                    Bitmap fBitmap = new Bitmap(fuckpath + "/F" + i + ".jpg");
+                    //fBitmap.RotateFlip(RotateFlipType.Rotate180FlipNone);  //指定不进行翻转的 180 度旋转  （垂直翻转+水平翻转）
+                    nowPcb.FrontPcb.bitmaps.Enqueue(new OneStitchSidePcb.BitmapInfo() { bitmap = (Bitmap)fBitmap.Clone(), name = "/F" + i + ".jpg" });
+                    fBitmap.Dispose();
 
-            //        //Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
-            //        MySmartThreadPool.Instance().QueueWorkItem(() =>
-            //        {
-            //            lock (nowPcb.FrontPcb)
-            //            {
-            //                Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
-            //            }
-            //        });
-            //    }
-            //});
+                    //Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
+                    MySmartThreadPool.Instance().QueueWorkItem(() =>
+                    {
+                        lock (nowPcb.FrontPcb)
+                        {
+                            Aoi.StitchMain(nowPcb.FrontPcb, onStitchCallBack);
+                        }
+                    });
+                }
+            });
 
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             Environment.Exit(0);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            //for(int i=193; i <= 240; i++)
+            //{
+            //    Bitmap fFFF = BitmapScaleHelper.ScaleToSize(new Bitmap(Application.StartupPath + "/mask/F" + i + ".jpg"), (float)0.5);
+            //    fFFF.Save(@"C:\Users\Administrator\Desktop\newdemoall\newdemoall\bin\x64\Debug\newMask\F" + i + ".jpg");
+            //}
+
+            feature_bbox_t_container feature_Bbox = new feature_bbox_t_container();
+
+            string imgPath = "testpic.png";
+            string maskPath = "";
+            OpenFileDialog ofd = new OpenFileDialog();
+            DialogResult fdr = ofd.ShowDialog();
+            if (fdr == DialogResult.OK)
+            {
+                imgPath = ofd.FileName;
+            }
+
+            ofd = new OpenFileDialog();
+            fdr = ofd.ShowDialog();
+            if (fdr == DialogResult.OK)
+            {
+                maskPath = ofd.FileName;
+            }
+
+            FP1 fP1 = new FP1 { feature = 1, n_boxes = 64, ks = 3, f_lb = 100, f_ub = 255, a_lb = 1, a_ub = 100, rb_lb = (float)0.8, whr_eps = (float)0.2, ar_eps = (float)0.3 };
+
+            Emgu.CV.Image<Bgr, Byte> currentFrame = new Emgu.CV.Image<Bgr, Byte>(new Bitmap(imgPath));
+            Mat img = new Mat();
+            CvInvoke.BitwiseAnd(currentFrame, currentFrame, img);
+            if (File.Exists(maskPath))
+            {
+                Mat mask = new Mat(maskPath, Emgu.CV.CvEnum.LoadImageType.Grayscale);
+                int res = Aoi.feature_filter(img.Ptr, ref feature_Bbox, fP1, mask.Ptr);
+                //mask.Dispose();
+            }
+            if (feature_Bbox.bboxlist.Length > 0)
+            {
+                for (int i = 0; i < feature_Bbox.bboxlist.Length; i++)
+                {
+                    if (feature_Bbox.bboxlist[i].Height == 0)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        //bbox_t bbox = new bbox_t(); //;
+                        Rectangle bbox = feature_Bbox.bboxlist[i];
+                        Rectangle rr = new Rectangle((int)bbox.X, (int)bbox.Y, (int)bbox.Width, (int)bbox.Height);
+                        rr.Inflate(30, 30);
+                        CvInvoke.Rectangle(img, rr, new MCvScalar(255, 255, 255), 5);
+                    }
+                }
+            }
+
+            img.Save("D:/fuck/xxx.jpg");
+            img.Dispose();
+            currentFrame.Dispose();
+
         }
     }
 

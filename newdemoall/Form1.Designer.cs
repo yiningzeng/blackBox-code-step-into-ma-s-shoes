@@ -46,6 +46,7 @@
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
             this.btnFuckTest = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.SuspendLayout();
@@ -171,7 +172,7 @@
             this.btnFuckStart.Name = "btnFuckStart";
             this.btnFuckStart.Size = new System.Drawing.Size(234, 33);
             this.btnFuckStart.TabIndex = 80;
-            this.btnFuckStart.Text = "启动拍摄方案（实时拼图检测）";
+            this.btnFuckStart.Text = "启动拍摄方案";
             this.btnFuckStart.UseVisualStyleBackColor = true;
             this.btnFuckStart.Click += new System.EventHandler(this.btnFuckStart_Click);
             // 
@@ -232,17 +233,27 @@
             // 
             this.btnFuckTest.Location = new System.Drawing.Point(576, 478);
             this.btnFuckTest.Name = "btnFuckTest";
-            this.btnFuckTest.Size = new System.Drawing.Size(234, 23);
+            this.btnFuckTest.Size = new System.Drawing.Size(164, 23);
             this.btnFuckTest.TabIndex = 95;
             this.btnFuckTest.Text = "测试拼图+检测（测试按钮）";
             this.btnFuckTest.UseVisualStyleBackColor = true;
-            this.btnFuckTest.Visible = false;
             this.btnFuckTest.Click += new System.EventHandler(this.btnFuckTest_Click);
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(759, 478);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 96;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // Form1
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.ClientSize = new System.Drawing.Size(870, 513);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.btnFuckTest);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.numericUpDown1);
@@ -293,6 +304,7 @@
         private System.Windows.Forms.NumericUpDown numericUpDown1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button btnFuckTest;
+        private System.Windows.Forms.Button button1;
     }
 }
 

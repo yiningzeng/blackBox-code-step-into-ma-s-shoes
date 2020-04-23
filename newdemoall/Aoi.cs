@@ -1,5 +1,6 @@
 ﻿using Emgu.CV;
 using Emgu.CV.Structure;
+using newdemoall.Tools;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -14,8 +15,35 @@ using static newdemoall.OneStitchSidePcb;
 
 namespace newdemoall
 {
-    class Aoi
+    public class Aoi
     {
+        #region newA
+        [StructLayoutAttribute(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        public struct FP1
+        {
+            public int feature;        // 特征类型编号
+            public uint n_boxes;     // 输出的bbox个数
+            public int ks;               // 卷积核尺寸，与图像尺寸成正比
+            public float f_lb;           // 特征下限
+            public float f_ub;           // 特征上限
+            public int a_lb;             // 面积下限
+            public int a_ub;             // 面积上限
+            public float rb_lb;
+            public float whr_eps;
+            public float ar_eps;
+        };
+
+        [StructLayoutAttribute(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        public struct feature_bbox_t_container
+        {
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 100)]
+            public Rectangle[] bboxlist;
+        };
+
+        [DllImport(@"aoi-v3-release.dll", EntryPoint = "feature_filter_csharp_v3", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern int feature_filter(IntPtr iplImage, ref feature_bbox_t_container f, FP1 fP1, IntPtr mask);
+        #endregion
+
         public enum side { none = 0, left = 1, up = 2, right = 4, down = 8 };
         // 图像匹配算子
         // img: 待搜索的图像
@@ -53,7 +81,8 @@ namespace newdemoall
             lock (oneSidePcb.bitmaps)
             {
                 bitmapInfo = oneSidePcb.bitmaps.Dequeue();
-                Emgu.CV.Image<Bgr, Byte> currentFrame = new Emgu.CV.Image<Bgr, Byte>(bitmapInfo.bitmap);
+                Bitmap half = BitmapScaleHelper.ScaleToSize(bitmapInfo.bitmap, (float)0.5);
+                Emgu.CV.Image<Bgr, Byte> currentFrame = new Emgu.CV.Image<Bgr, Byte>(half);
                 Mat imgOld = new Mat();
                 CvInvoke.BitwiseAnd(currentFrame, currentFrame, imgOld);
                 int edge = 3;
@@ -160,11 +189,10 @@ namespace newdemoall
                     }
                 }
                 #region 实时更新采集框
-
-                stitchCallBack(false, oneSidePcb, bitmapInfo, new RectangleF((float)(oneSidePcb.roi.Location.X * 0.25),
-                        (float)(oneSidePcb.roi.Location.Y * 0.25),
-                        (float)(oneSidePcb.roi.Size.Width * 0.25),
-                        (float)(oneSidePcb.roi.Size.Height * 0.25)));
+                stitchCallBack(false, oneSidePcb, bitmapInfo, new RectangleF((float)(oneSidePcb.roi.Location.X * 0.5),
+                        (float)(oneSidePcb.roi.Location.Y * 0.5),
+                        (float)(oneSidePcb.roi.Size.Width * 0.5),
+                        (float)(oneSidePcb.roi.Size.Height * 0.5)));
                 #endregion
 
                 #region 释放资源
