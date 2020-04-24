@@ -47,6 +47,14 @@
             this.label2 = new System.Windows.Forms.Label();
             this.btnFuckTest = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
+            this.tbRows = new System.Windows.Forms.TextBox();
+            this.tbCols = new System.Windows.Forms.TextBox();
+            this.tbMaskPath = new System.Windows.Forms.TextBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.button2 = new System.Windows.Forms.Button();
+            this.btnReSetId = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.SuspendLayout();
@@ -170,7 +178,7 @@
             // 
             this.btnFuckStart.Location = new System.Drawing.Point(576, 83);
             this.btnFuckStart.Name = "btnFuckStart";
-            this.btnFuckStart.Size = new System.Drawing.Size(234, 33);
+            this.btnFuckStart.Size = new System.Drawing.Size(119, 33);
             this.btnFuckStart.TabIndex = 80;
             this.btnFuckStart.Text = "启动拍摄方案";
             this.btnFuckStart.UseVisualStyleBackColor = true;
@@ -185,6 +193,7 @@
             this.btnFuckDetectThisPcb.TabIndex = 91;
             this.btnFuckDetectThisPcb.Text = "检测本块板";
             this.btnFuckDetectThisPcb.UseVisualStyleBackColor = true;
+            this.btnFuckDetectThisPcb.Visible = false;
             this.btnFuckDetectThisPcb.Click += new System.EventHandler(this.btnFuckDetectThisPcb_Click);
             // 
             // btnDetectPath
@@ -195,6 +204,7 @@
             this.btnDetectPath.TabIndex = 92;
             this.btnDetectPath.Text = "检测文件夹";
             this.btnDetectPath.UseVisualStyleBackColor = true;
+            this.btnDetectPath.Visible = false;
             this.btnDetectPath.Click += new System.EventHandler(this.btnDetectPath_Click);
             // 
             // numericUpDown1
@@ -219,6 +229,7 @@
             0,
             0,
             65536});
+            this.numericUpDown1.Visible = false;
             // 
             // label2
             // 
@@ -228,12 +239,13 @@
             this.label2.Size = new System.Drawing.Size(41, 12);
             this.label2.TabIndex = 94;
             this.label2.Text = "灵敏度";
+            this.label2.Visible = false;
             // 
             // btnFuckTest
             // 
-            this.btnFuckTest.Location = new System.Drawing.Point(576, 478);
+            this.btnFuckTest.Location = new System.Drawing.Point(611, 551);
             this.btnFuckTest.Name = "btnFuckTest";
-            this.btnFuckTest.Size = new System.Drawing.Size(164, 23);
+            this.btnFuckTest.Size = new System.Drawing.Size(199, 23);
             this.btnFuckTest.TabIndex = 95;
             this.btnFuckTest.Text = "测试拼图+检测（测试按钮）";
             this.btnFuckTest.UseVisualStyleBackColor = true;
@@ -241,18 +253,96 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(759, 478);
+            this.button1.Location = new System.Drawing.Point(816, 395);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 96;
             this.button1.Text = "button1";
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Visible = false;
             this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(576, 472);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(29, 12);
+            this.label3.TabIndex = 97;
+            this.label3.Text = "行数";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(576, 503);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(29, 12);
+            this.label5.TabIndex = 97;
+            this.label5.Text = "列数";
+            // 
+            // tbRows
+            // 
+            this.tbRows.Location = new System.Drawing.Point(611, 469);
+            this.tbRows.Name = "tbRows";
+            this.tbRows.Size = new System.Drawing.Size(109, 21);
+            this.tbRows.TabIndex = 98;
+            // 
+            // tbCols
+            // 
+            this.tbCols.Location = new System.Drawing.Point(611, 499);
+            this.tbCols.Name = "tbCols";
+            this.tbCols.Size = new System.Drawing.Size(109, 21);
+            this.tbCols.TabIndex = 99;
+            // 
+            // tbMaskPath
+            // 
+            this.tbMaskPath.Location = new System.Drawing.Point(611, 524);
+            this.tbMaskPath.Name = "tbMaskPath";
+            this.tbMaskPath.Size = new System.Drawing.Size(199, 21);
+            this.tbMaskPath.TabIndex = 101;
+            this.tbMaskPath.MouseDown += new System.Windows.Forms.MouseEventHandler(this.tbMaskPath_MouseDown);
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(552, 527);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(53, 12);
+            this.label6.TabIndex = 100;
+            this.label6.Text = "Mask目录";
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(726, 472);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(84, 40);
+            this.button2.TabIndex = 102;
+            this.button2.Text = "选Mask图";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // btnReSetId
+            // 
+            this.btnReSetId.Location = new System.Drawing.Point(710, 83);
+            this.btnReSetId.Name = "btnReSetId";
+            this.btnReSetId.Size = new System.Drawing.Size(109, 33);
+            this.btnReSetId.TabIndex = 103;
+            this.btnReSetId.Text = "手动重置拍摄编号";
+            this.btnReSetId.UseVisualStyleBackColor = true;
+            this.btnReSetId.Click += new System.EventHandler(this.btnReSetId_Click);
             // 
             // Form1
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-            this.ClientSize = new System.Drawing.Size(870, 513);
+            this.ClientSize = new System.Drawing.Size(860, 579);
+            this.Controls.Add(this.btnReSetId);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.tbMaskPath);
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.tbCols);
+            this.Controls.Add(this.tbRows);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.label3);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.btnFuckTest);
             this.Controls.Add(this.label2);
@@ -305,6 +395,14 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button btnFuckTest;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.TextBox tbRows;
+        private System.Windows.Forms.TextBox tbCols;
+        private System.Windows.Forms.TextBox tbMaskPath;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button btnReSetId;
     }
 }
 

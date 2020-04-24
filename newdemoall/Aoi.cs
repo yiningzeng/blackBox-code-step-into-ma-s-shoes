@@ -128,9 +128,17 @@ namespace newdemoall
                     //oneSidePcb.dst.Save(@"C:\Users\Administrator\Desktop\suomi-test-img\" + oneSidePcb.currentRow + "-" + oneSidePcb.currentCol + ".jpg");
                     copy_to(oneSidePcb.dst.Ptr, img.Ptr, oneSidePcb.roi);
 
-                    //oneSidePcb.dst.Save(@"C:\Users\Administrator\Desktop\suomi-test-img\" + oneSidePcb.currentRow + "-" + oneSidePcb.currentCol + ".jpg");
+                    oneSidePcb.dst.Save(Path.Combine(oneSidePcb.savePath, "test.jpg"));
 
                     oneSidePcb.currentCol++;
+                    if (oneSidePcb.pcbId.Contains("onlyone"))
+                    {
+                        if (oneSidePcb.currentRow >= oneSidePcb.allRows - 2 && oneSidePcb.currentCol >= oneSidePcb.allCols)
+                        {
+                            needSave = true;
+                        }
+                    }
+
                     if (oneSidePcb.currentCol >= oneSidePcb.allCols)
                     {
                         oneSidePcb.currentCol = 0;

@@ -116,9 +116,9 @@ namespace newdemoall
                     pcbId = id,
                     savePath = sPath,
 
-                    allRows = 10,
-                    allCols = 24,
-                    allNum = 240, // 这里多尺度是需要改变总数*2的
+                    allRows = 2,
+                    allCols = 27,
+                    allNum = 27, // 这里多尺度是需要改变总数*2的
                     currentRow = 0,
                     currentCol = 0,
                     zTrajectory = true,
@@ -131,7 +131,7 @@ namespace newdemoall
 
                 pcb.SurfaceNumber = 1;
                 pcb.FrontPcb = front;
-                pcb.AllPhotoNum = 240;
+                pcb.AllPhotoNum = 21;
                 return pcb;
             }
             catch (Exception er) { return null; }

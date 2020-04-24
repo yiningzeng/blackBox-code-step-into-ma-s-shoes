@@ -54,6 +54,10 @@ namespace newdemoall
         private bool isBabyYiNing = false; //不跑小马的代码
 
         private bool isFuckNewProject = false;
+
+        private string maskBasePath = "";
+        int fuckRows = 0; 
+        int fuckCols = 0; 
         /// <summary>
         /// 拼图回调函数，用于执行界面更新
         /// </summary>
@@ -100,12 +104,12 @@ namespace newdemoall
         public void aiDetect(bool isFront, OneStitchSidePcb.BitmapInfo bitmapInfo, Rectangle scaleRect, double scale, float confidence, string savePath)
         {
   
-            if (allDetectNum < 193)
-            {
-                aiDone(savePath);
-                bitmapInfo.bitmap.Dispose();
-                return;
-            }
+            //if (allDetectNum < 193)
+            //{
+            //    aiDone(savePath);
+            //    bitmapInfo.bitmap.Dispose();
+            //    return;
+            //}
             MySmartThreadPool.InstanceSmall().QueueWorkItem((n, name, bmp) =>
             {
                 try
@@ -129,7 +133,7 @@ namespace newdemoall
                     Emgu.CV.Image<Bgr, Byte> currentFrame = new Emgu.CV.Image<Bgr, Byte>(bmp);
                     Mat img = new Mat();
                     CvInvoke.BitwiseAnd(currentFrame, currentFrame, img);
-                    string maskPath = Application.StartupPath + "/mask/" + name;
+                    string maskPath = maskBasePath + "/" + name;
                     if (File.Exists(maskPath))
                     {
                         Mat mask = new Mat(maskPath, Emgu.CV.CvEnum.LoadImageType.Grayscale);
@@ -369,6 +373,12 @@ namespace newdemoall
 
         private void btnFuckStart_Click(object sender, EventArgs e)
         {
+            if (tbRows.Text.Trim().Length == 0 || tbCols.Text.Trim().Length == 0)
+            {
+                MessageBox.Show("请先设定好行数和列数，这样才能监控到拍摄是否完成，并自动重置图片的ID");
+                return;
+            }
+
             fuckSaveNum = 0;
             fuckDetectNum = 0;
             nowPcb = Pcb.CreatePcb();
@@ -647,7 +657,7 @@ namespace newdemoall
                             bitmap.Save(nowPcb.FrontPcb.savePath + "/F" + fuckDetectNum + ".jpg");
                       
                             this.Text = "当前拍照数量" + fuckDetectNum;
-                            if (fuckDetectNum == 240)
+                            if (fuckDetectNum == fuckRows * fuckCols)
                             {
                                 fuckDetectNum = 0;
                                 MessageBox.Show("拍摄完成");
@@ -899,6 +909,18 @@ namespace newdemoall
 
         private void btnFuckTest_Click(object sender, EventArgs e)
         {
+            if (tbRows.Text.Trim().Length == 0 || tbCols.Text.Trim().Length == 0)
+            {
+                MessageBox.Show("行数或者列数不可为空");
+                return;
+            }
+            fuckRows = int.Parse(tbRows.Text.Trim());
+            fuckCols = int.Parse(tbCols.Text.Trim());
+            if (fuckRows == 1) {
+                fuckRows = 2;
+                nowPcb.FrontPcb.pcbId += "onlyone";
+            }
+
             fuckDetectNum = 0;
             //thiscard = true;
             //isBabyYiNing = true;
@@ -935,9 +957,9 @@ namespace newdemoall
             string fuckpath = info.Parent.FullName;
             nowPcb.Id = info.Parent.Name;
             nowPcb.FrontPcb.savePath = @"D:\Power-Ftp\" + info.Parent.Name;
-            nowPcb.FrontPcb.allCols = 24;
-            nowPcb.FrontPcb.allRows = 10;
-            nowPcb.FrontPcb.allNum = 240;
+            nowPcb.FrontPcb.allCols = fuckCols;
+            nowPcb.FrontPcb.allRows = fuckRows;
+            nowPcb.FrontPcb.allNum = fuckCols * fuckRows;
             nowPcb.FrontPcb.or_hl = 0.3;
             nowPcb.FrontPcb.or_hu = 0.4;
             nowPcb.FrontPcb.or_vl = 0.1;
@@ -1033,6 +1055,33 @@ namespace newdemoall
             img.Dispose();
             currentFrame.Dispose();
 
+        }
+
+        private void tbMaskPath_MouseDown(object sender, MouseEventArgs e)
+        {
+    
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            DialogResult fdr = ofd.ShowDialog();
+            if (fdr == DialogResult.OK)
+            {
+                DirectoryInfo info = new DirectoryInfo(ofd.FileName);
+                tbMaskPath.Text = info.Parent.FullName;
+                maskBasePath = info.Parent.FullName;
+            }
+        }
+
+        /// <summary>
+        /// 重置拍摄编号
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnReSetId_Click(object sender, EventArgs e)
+        {
+            fuckDetectNum = 0;
         }
     }
 
